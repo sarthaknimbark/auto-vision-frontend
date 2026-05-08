@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AppLayout } from './layouts/app-layout'
+import { AuthProvider } from './context/auth-context'
 
 const DashboardPage = lazy(async () =>
   import('./pages/dashboard-page').then((module) => ({ default: module.DashboardPage })),
@@ -41,8 +42,10 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <Suspense fallback={<p className="p-6 text-sm text-[#4B4B4B]">Loading interface...</p>}>
-      <RouterProvider router={router} />
-    </Suspense>
+    <AuthProvider>
+      <Suspense fallback={<p className="p-6 text-sm text-[#4B4B4B]">Loading interface...</p>}>
+        <RouterProvider router={router} />
+      </Suspense>
+    </AuthProvider>
   )
 }

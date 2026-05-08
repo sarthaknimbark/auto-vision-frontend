@@ -6,7 +6,7 @@ const cardVariants = cva('rounded-3xl border p-6 transition-all', {
   variants: {
     variant: {
       default: 'glass-surface border-white/85',
-      muted: 'glass-muted border-[#60176F]/12',
+      muted: 'glass-muted border-[#984216]/12',
       solid: 'bg-white border-[#111111]/7 shadow-[0_8px_20px_rgba(17,17,17,0.06)]',
     },
     spacing: {

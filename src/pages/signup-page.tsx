@@ -1,41 +1,91 @@
-import { Link } from 'react-router-dom'
-import { Button } from '../components/ui/button'
-import { Card } from '../components/ui/card'
-import { Input } from '../components/ui/input'
+import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useAuth } from '../context/auth-context'
 
 export function SignupPage() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role: 'user' })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.msg || 'Registration failed')
+      login(data.user, data.token)
+      navigate('/')
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-      <Card className="w-full space-y-6" spacing="roomy">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-[#111111]">Create Account</h1>
-          <p className="text-sm text-[#4B4B4B]">Join the future of automotive assessment</p>
+    <div className="mx-auto flex max-w-md items-center min-h-[80vh] px-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="glass-card w-full p-10">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-[#984216] rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-6">
+            <span className="text-white font-bold text-3xl">A</span>
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 mb-2">Create Account</h1>
+          <p className="text-slate-500 font-medium">Join the AutoVision platform today</p>
         </div>
         
-        <div className="space-y-4">
-          <Input placeholder="Full Name" />
-          <Input placeholder="Email Address" type="email" />
-          <Input placeholder="Password" type="password" />
-        </div>
+        <form onSubmit={handleSignup} className="space-y-4">
+          {error && <div className="p-3 rounded-xl bg-red-50 text-red-600 text-sm font-bold border border-red-100">{error}</div>}
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-500 ml-1">Full Name</label>
+            <input 
+              placeholder="John Doe" 
+              className="input-glass w-full h-12"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-500 ml-1">Email Address</label>
+            <input 
+              placeholder="name@company.com" 
+              type="email" 
+              className="input-glass w-full h-12"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-500 ml-1">Password</label>
+            <input 
+              placeholder="••••••••" 
+              type="password" 
+              className="input-glass w-full h-12"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          
+          <button type="submit" className="button-primary w-full h-12 mt-4 font-black text-lg shadow-xl">
+            Create Account
+          </button>
+        </form>
 
-        <Button className="w-full" size="lg" type="button">
-          Get Started
-        </Button>
-
-        <p className="text-center text-sm text-[#4B4B4B]">
+        <p className="text-center text-sm font-medium text-slate-500 mt-8">
           Already have an account?{' '}
-          <Link className="font-semibold text-[#60176F] hover:underline" to="/login">
-            Login
+          <Link className="font-bold text-[#984216] hover:text-[#823812] transition-colors" to="/login">
+            Sign In
           </Link>
         </p>
-
-        <div className="rounded-2xl border border-[#60176F]/12 bg-[#60176F]/6 p-4">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[#4B4B4B]">System Note</p>
-          <p className="text-xs leading-relaxed text-[#4B4B4B]/80">
-            Signup schema is pending backend contract. Registration flow will be finalized once endpoints are available.
-          </p>
-        </div>
-      </Card>
+      </div>
     </div>
   )
 }

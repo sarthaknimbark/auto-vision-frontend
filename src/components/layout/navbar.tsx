@@ -1,66 +1,131 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Menu } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Menu, X, LogOut, User as UserIcon } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '../ui/button'
+import { useAuth } from '../../context/auth-context'
 
 const links = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/upload', label: 'Upload' },
-  { to: '/result', label: 'Result' },
-  { to: '/login', label: 'Login' },
+  { to: '/', label: 'Home' },
+  { to: '/upload', label: 'Analyze' },
+  { to: '/history', label: 'Reports' },
 ]
 
 export function Navbar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { user, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-white/70 bg-white/65 backdrop-blur-2xl">
-      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="heading-gradient text-lg font-bold sm:text-xl">
-          AutoVision
+    <nav className="sticky top-0 z-50 bg-white/40 backdrop-blur-md border-b border-white/20">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 bg-[#984216] rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
+            <span className="text-white font-bold text-xl">A</span>
+          </div>
+          <span className="heading-gradient text-2xl font-black tracking-tight">AutoVision</span>
         </Link>
-        <div className="hidden items-center gap-2 md:flex">
+
+        <div className="hidden items-center gap-8 md:flex">
           {links.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${location.pathname === link.to
-                  ? 'bg-[#60176F]/10 text-[#60176F]'
-                  : 'text-[#4B4B4B] hover:bg-white hover:text-[#111111]'
-                }`}
+              className={`text-sm font-semibold transition-all hover:text-[#984216] ${
+                location.pathname === link.to
+                  ? 'text-[#984216]'
+                  : 'text-[#64748b]'
+              }`}
             >
               {link.label}
             </Link>
           ))}
+          
+          {user ? (
+            <div className="flex items-center gap-6 pl-6 border-l border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-[#984216]">
+                  <UserIcon size={18} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-slate-900 leading-none">{user.name}</span>
+                  <span className="text-[10px] font-bold text-[#984216] uppercase tracking-wider mt-1">{user.role}</span>
+                </div>
+              </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <Link to="/login">
+              <button className="button-primary !py-2 !px-6 text-sm">
+                Login
+              </button>
+            </Link>
+          )}
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="md:hidden"
+
+        <button
+          className="md:hidden text-[#984216]"
           onClick={() => setMobileOpen((state) => !state)}
-          aria-label="Toggle navigation menu"
         >
-          <Menu className="h-5 w-5" />
-        </Button>
+          {mobileOpen ? <X size={28} /> : <Menu size={28} />}
+        </button>
       </div>
+
+      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="mx-4 mb-4 space-y-2 rounded-2xl border border-white/80 bg-white/80 p-3 shadow-[0_8px_22px_rgba(17,17,17,0.08)] backdrop-blur-xl md:hidden">
-          {links.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              className={`block rounded-xl px-4 py-2.5 text-sm font-medium ${location.pathname === link.to
-                  ? 'bg-[#60176F]/10 text-[#60176F]'
-                  : 'text-[#4B4B4B] hover:bg-[#60176F]/5'
+        <div className="absolute top-20 left-0 right-0 glass-card mx-6 p-6 md:hidden animate-in slide-in-from-top-4 duration-300">
+          <div className="flex flex-col gap-6">
+            {links.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                onClick={() => setMobileOpen(false)}
+                className={`text-lg font-bold ${
+                  location.pathname === link.to ? 'text-[#984216]' : 'text-[#64748b]'
                 }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+              >
+                {link.label}
+              </Link>
+            ))}
+            
+            {user ? (
+              <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-[#984216]">
+                    <UserIcon size={20} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-black text-slate-900">{user.name}</span>
+                    <span className="text-[10px] font-bold text-[#984216] uppercase tracking-wider">{user.role}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-600 font-bold text-sm"
+                >
+                  <LogOut size={18} />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" onClick={() => setMobileOpen(false)}>
+                <button className="button-primary w-full">Login</button>
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </nav>
   )
 }
+

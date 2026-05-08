@@ -8,11 +8,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-gradient-to-b from-[#6d1b7e] to-[#60176F] text-white shadow-[0_12px_26px_rgba(96,23,111,0.28)] hover:scale-[1.01] hover:from-[#742085] hover:to-[#611970] active:scale-[0.99]',
+          'bg-gradient-to-b from-[#af4e1d] to-[#984216] text-white shadow-[0_12px_26px_rgba(152,66,22,0.28)] hover:from-[#c25a25] hover:to-[#9f4518] hover:scale-[1.01] active:scale-[0.99]',
         secondary:
           'glass-surface text-[#111111] shadow-[0_10px_22px_rgba(17,17,17,0.07)] hover:bg-white',
         outline:
-          'border border-[#60176F]/22 bg-white/70 text-[#60176F] backdrop-blur-xl hover:bg-[#60176F]/5 hover:border-[#60176F]/30',
+          'border border-[#984216]/22 bg-white/70 text-[#984216] backdrop-blur-xl hover:bg-[#984216]/5 hover:border-[#984216]/30',
         ghost: 'bg-transparent text-[#4B4B4B] hover:bg-white/65 hover:text-[#111111]',
         danger:
           'bg-gradient-to-b from-[#ef5b72] to-[#e3445f] text-white shadow-[0_10px_24px_rgba(227,68,95,0.24)] hover:scale-[1.01]',
