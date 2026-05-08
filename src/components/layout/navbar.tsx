@@ -7,7 +7,6 @@ const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/upload', label: 'Upload' },
   { to: '/result', label: 'Result' },
-  { to: '/history', label: 'History' },
   { to: '/login', label: 'Login' },
 ]
 
@@ -26,11 +25,10 @@ export function Navbar() {
             <Link
               key={link.to}
               to={link.to}
-              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
-                location.pathname === link.to
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${location.pathname === link.to
                   ? 'bg-[#60176F]/10 text-[#60176F]'
                   : 'text-[#4B4B4B] hover:bg-white hover:text-[#111111]'
-              }`}
+                }`}
             >
               {link.label}
             </Link>
@@ -53,11 +51,10 @@ export function Navbar() {
               key={link.to}
               to={link.to}
               onClick={() => setMobileOpen(false)}
-              className={`block rounded-xl px-4 py-2.5 text-sm font-medium ${
-                location.pathname === link.to
+              className={`block rounded-xl px-4 py-2.5 text-sm font-medium ${location.pathname === link.to
                   ? 'bg-[#60176F]/10 text-[#60176F]'
                   : 'text-[#4B4B4B] hover:bg-[#60176F]/5'
-              }`}
+                }`}
             >
               {link.label}
             </Link>

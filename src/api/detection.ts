@@ -60,3 +60,24 @@ export async function estimateCost(
   )
   return data
 }
+
+export async function generateReport(
+  file: File,
+  vehicle?: { make?: string; model?: string; year?: number },
+) {
+  const form = new FormData()
+  form.append('file', file)
+  if (vehicle?.make) {
+    form.append('make', vehicle.make)
+  }
+  if (vehicle?.model) {
+    form.append('model', vehicle.model)
+  }
+  if (vehicle?.year) {
+    form.append('year', String(vehicle.year))
+  }
+  const { data } = await apiClient.post('/upload/report', form, {
+    responseType: 'blob',
+  })
+  return data
+}
