@@ -28,6 +28,7 @@ export function HistoryPage() {
   }, [token])
 
   const handleViewReport = (item: any) => {
+    console.log('User Opening History Report:', item)
     if (!item?.results) return
     const img = historyImageSrc(item.imageUrl)
     useDetectionStore.setState({

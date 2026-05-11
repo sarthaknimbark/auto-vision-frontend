@@ -68,23 +68,47 @@ export function ResultPage() {
   // Ensure isMultiScan is true if scans are present (fallback for history loading)
   const isMultiScan = isMultiScanStore || (scans && scans.length > 0)
 
-  useEffect(() => {
-    console.log('ResultPage State:', { isMultiScan, isMultiScanStore, scansCount: scans?.length })
-  }, [isMultiScan, isMultiScanStore, scans])
   const [displaySrc, setDisplaySrc] = useState<string | null>(null)
   const [imageSize, setImageSize] = useState({ width: 1, height: 1 })
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeScanIdx, setActiveScanIdx] = useState(0)
 
+  useEffect(() => {
+    const state = useDetectionStore.getState();
+    const assessmentId = (state.predict as any)?._id || (state.severity as any)?._id || 'UNKNOWN';
+    console.log('ResultPage Store Full Snapshot:', { 
+      assessmentId,
+      isMultiScan, 
+      isMultiScanStore: state.isMultiScan, 
+      scansCount: state.scans?.length,
+      previewUrl: state.previewUrl ? (state.previewUrl.startsWith('data:') ? 'data:...' : state.previewUrl) : 'NULL',
+      filePresent: !!state.file,
+      activeScanIdx,
+      hasPredict: !!state.predict,
+      hasSeverity: !!state.severity,
+      hasCost: !!state.cost
+    })
+  }, [isMultiScan, activeScanIdx])
+
   useLayoutEffect(() => {
     if (isMultiScan && scans.length > 0) {
-      setDisplaySrc(scans[activeScanIdx].previewUrl)
+      setDisplaySrc(scans[activeScanIdx]?.previewUrl || null)
     } else if (file) {
       const url = URL.createObjectURL(file)
       setDisplaySrc(url)
       return () => URL.revokeObjectURL(url)
-    } else {
+    } else if (previewUrlFromStore) {
       setDisplaySrc(previewUrlFromStore)
+    } else {
+      // Aggressive Fallback for History/Admin view
+      const state = useDetectionStore.getState()
+      const assessmentId = (state.predict as any)?._id || (state.severity as any)?._id
+      if (assessmentId && /^[a-f\d]{24}$/i.test(assessmentId)) {
+        const token = localStorage.getItem('token') || ''
+        setDisplaySrc(`http://localhost:5000/api/data/assessment/${assessmentId}/image?token=${encodeURIComponent(token)}`)
+      } else {
+        setDisplaySrc(null)
+      }
     }
     return undefined
   }, [file, previewUrlFromStore, isMultiScan, scans, activeScanIdx])

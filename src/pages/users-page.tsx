@@ -70,6 +70,7 @@ export function UsersPage() {
         headers: { 'x-auth-token': token || '' }
       })
       const data = await res.json()
+      console.log('Admin Fetched Reports:', data)
       if (Array.isArray(data)) {
         setReports(data)
       }
@@ -365,13 +366,12 @@ export function UsersPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {reports.map((row) => {
-                    const level =
-                      row.results?.severity?.severity_report?.severity_level ?? '—'
+                    const level = row.results?.severity?.severity_report?.severity_level ?? '—'
                     const est = row.results?.cost?.cost_estimation
                     const vehicle = row.vehicleInfo
-                    const high =
-                      level === 'High' || level === 'Critical'
+                    const high = level === 'High' || level === 'Critical'
                     const thumb = historyImageSrc(row.imageUrl)
+                    console.log('Row Image URL:', { id: row._id, url: row.imageUrl ? (row.imageUrl.startsWith('data:') ? 'data:...' : row.imageUrl) : 'MISSING' })
                     return (
                       <tr key={row._id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-4 py-2 align-middle">
