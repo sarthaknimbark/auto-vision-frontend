@@ -11,6 +11,10 @@ import {
   Trash2,
   FileText,
   ArrowRight,
+  BarChart3,
+  TrendingUp,
+  Car,
+  AlertCircle,
 } from 'lucide-react'
 import { historyImageSrc } from '../utils/history-image'
 
@@ -31,7 +35,7 @@ type ReportRow = {
   createdAt?: string
 }
 
-type AdminTab = 'users' | 'reports'
+type AdminTab = 'users' | 'reports' | 'analytics'
 
 export function UsersPage() {
   const [tab, setTab] = useState<AdminTab>('users')
@@ -81,7 +85,7 @@ export function UsersPage() {
   }, [token, user])
 
   useEffect(() => {
-    if (user?.role === 'admin' && tab === 'reports') {
+    if (user?.role === 'admin' && (tab === 'reports' || tab === 'analytics')) {
       fetchAllReports()
     }
   }, [token, user, tab])
@@ -200,6 +204,21 @@ export function UsersPage() {
             >
               <FileText size={18} />
               Reports
+            </button>
+            <button
+              id="admin-tab-analytics"
+              type="button"
+              role="tab"
+              aria-selected={tab === 'analytics'}
+              onClick={() => setTab('analytics')}
+              className={`${tabBtn} ${
+                tab === 'analytics'
+                  ? 'bg-white text-[#984216] shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <BarChart3 size={18} />
+              Analytics
             </button>
           </div>
           {tab === 'users' ? (
@@ -416,6 +435,149 @@ export function UsersPage() {
               </table>
             </div>
           )}
+        </div>
+      )}
+      {tab === 'analytics' && (
+        <div role="tabpanel" aria-labelledby="admin-tab-analytics">
+          <p className="text-slate-500 text-sm font-medium mb-8">Platform-wide insights and performance metrics</p>
+          
+          {reportsLoading ? (
+            <div className="text-center py-16 glass-card">
+              <p className="text-slate-400 font-medium">Calculating insights...</p>
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="glass-card p-12 text-center text-slate-500 font-medium">
+              Not enough data for analytics.
+            </div>
+          ) : (() => {
+            // Analytics Logic
+            const totalReports = reports.length;
+            const costs = reports.map(r => r.results?.cost?.cost_estimation?.grand_total || 0).filter(c => c > 0);
+            const avgCost = costs.length > 0 ? (costs.reduce((a, b) => a + b, 0) / costs.length).toFixed(2) : '0';
+            
+            const modelCounts: Record<string, number> = {};
+            const damageCounts: Record<string, number> = {};
+            
+            reports.forEach(r => {
+              // Car Models
+              const model = `${r.vehicleInfo?.make || ''} ${r.vehicleInfo?.model || ''}`.trim() || 'Unknown';
+              modelCounts[model] = (modelCounts[model] || 0) + 1;
+              
+              // Damage Types
+              const predictions = (r.results?.predict as any)?.predictions || [];
+              predictions.forEach((p: any) => {
+                const type = p.class || 'Unknown';
+                damageCounts[type] = (damageCounts[type] || 0) + 1;
+              });
+            });
+
+            const topModels = Object.entries(modelCounts)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5);
+
+            const topDamage = Object.entries(damageCounts)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3);
+
+            return (
+              <div className="space-y-8">
+                {/* Top Stats Cards */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="glass-card p-6 border-l-4 border-[#984216]">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-[#984216]">
+                        <TrendingUp size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Average Repair</span>
+                    </div>
+                    <div className="text-3xl font-black text-slate-900">
+                      INR {avgCost}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2 font-medium">Based on {costs.length} paid estimates</p>
+                  </div>
+
+                  <div className="glass-card p-6 border-l-4 border-blue-500">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                        <FileText size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Reports</span>
+                    </div>
+                    <div className="text-3xl font-black text-slate-900">
+                      {totalReports}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2 font-medium">Platform-wide assessments</p>
+                  </div>
+
+                  <div className="glass-card p-6 border-l-4 border-green-500">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+                        <Users size={20} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Users</span>
+                    </div>
+                    <div className="text-3xl font-black text-slate-900">
+                      {users.length}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-2 font-medium">Registered accounts</p>
+                  </div>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Most Common Models */}
+                  <div className="glass-card p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                      <Car className="text-[#984216]" size={24} />
+                      <h3 className="text-xl font-black text-slate-900">Top Car Models</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {topModels.map(([model, count], idx) => (
+                        <div key={model} className="flex items-center justify-between p-3 rounded-xl bg-slate-50/50">
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-100">
+                              {idx + 1}
+                            </span>
+                            <span className="font-bold text-slate-700">{model}</span>
+                          </div>
+                          <span className="text-sm font-black text-[#984216]">{count} scans</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Common Damage Types */}
+                  <div className="glass-card p-8">
+                    <div className="flex items-center gap-3 mb-8">
+                      <AlertCircle className="text-red-500" size={24} />
+                      <h3 className="text-xl font-black text-slate-900">Most Common Damage</h3>
+                    </div>
+                    <div className="space-y-6">
+                      {topDamage.map(([type, count]) => {
+                        const percentage = Math.round((count / reports.reduce((acc, r) => acc + ((r.results?.predict as any)?.predictions?.length || 0), 0)) * 100);
+                        return (
+                          <div key={type}>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-slate-700 uppercase text-xs tracking-widest">{type}</span>
+                              <span className="font-black text-slate-900">{count} instances</span>
+                            </div>
+                            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-red-500 rounded-full" 
+                                style={{ width: `${Math.min(percentage, 100) || 5}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-8 text-xs text-slate-400 font-medium leading-relaxed italic">
+                      Percentages represent the frequency of this damage type relative to all detected anomalies across all vehicles.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
