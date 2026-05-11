@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronRight, Play } from 'lucide-react'
 import { HowItWorks } from '../components/HowItWorks'
 import { FeatureCards } from '../components/FeatureCards'
+import { useAuth } from '../context/auth-context'
 
 export function DashboardPage() {
+  const { user } = useAuth()
   return (
     <div className="flex flex-col">
       {/* Section 1: Hero */}
@@ -55,7 +57,10 @@ export function DashboardPage() {
                     <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </Link>
-                <button className="flex items-center gap-2 font-semibold text-slate-900 hover:text-[#984216] transition-colors group">
+                <button 
+                  onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center gap-2 font-semibold text-slate-900 hover:text-[#984216] transition-colors group"
+                >
                   <div className="w-10 h-10 rounded-full bg-white border border-brand-100 flex items-center justify-center text-brand-700 group-hover:border-[#984216]/30 transition-colors shadow-sm">
                     <Play className="h-4 w-4 fill-current" />
                   </div>
@@ -70,16 +75,16 @@ export function DashboardPage() {
                 transition={{ delay: 0.5 }}
               >
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">99.2%</div>
-                  <div className="text-sm text-slate-500 font-medium">Accuracy Rate</div>
+                  <div className="text-xl font-black text-slate-900">Deep Learning</div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">AI Powered</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">2.5s</div>
-                  <div className="text-sm text-slate-500 font-medium">Processing Time</div>
+                  <div className="text-xl font-black text-slate-900">Cloud Secure</div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Atlas Encryption</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-slate-900">50k+</div>
-                  <div className="text-sm text-slate-500 font-medium">Cars Analyzed</div>
+                  <div className="text-xl font-black text-slate-900">Instant PDF</div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider">Pro Reports</div>
                 </div>
               </motion.div>
             </div>
@@ -135,7 +140,7 @@ export function DashboardPage() {
       </section>
 
       {/* Section 3: How It Works */}
-      <section className="py-24 bg-brand-50/50">
+      <section id="how-it-works" className="py-24 bg-brand-50/50">
         <HowItWorks />
       </section>
 
@@ -151,9 +156,9 @@ export function DashboardPage() {
               <p className="mb-10 text-brand-100 text-lg max-w-2xl mx-auto font-medium">
                 Join hundreds of enterprise partners who trust AutoVision for their claims processing and vehicle assessments.
               </p>
-              <Link to="/signup">
+              <Link to={user ? "/upload" : "/signup"}>
                 <button className="bg-white text-[#984216] hover:bg-brand-50 px-10 py-4 rounded-2xl font-bold text-lg shadow-xl hover:-translate-y-1 transition-all">
-                  Get Started for Free
+                  {user ? "Go to Analysis" : "Get Started for Free"}
                 </button>
               </Link>
             </div>

@@ -15,6 +15,7 @@ export interface PredictionItem {
   class: string
   confidence: number
   bbox: [number, number, number, number]
+  image_index?: number
 }
 
 export interface PredictResponse {

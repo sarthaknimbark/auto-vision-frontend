@@ -81,3 +81,24 @@ export async function generateReport(
   })
   return data
 }
+
+export async function fullScan(
+  files: File[],
+  vehicle?: { make?: string; model?: string; year?: number },
+) {
+  const form = new FormData()
+  files.forEach((file) => {
+    form.append('files', file)
+  })
+  if (vehicle?.make) {
+    form.append('make', vehicle.make)
+  }
+  if (vehicle?.model) {
+    form.append('model', vehicle.model)
+  }
+  if (vehicle?.year) {
+    form.append('year', String(vehicle.year))
+  }
+  const { data } = await apiClient.post<any>('/upload/full-scan', form)
+  return data
+}

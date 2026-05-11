@@ -1,17 +1,58 @@
 import jsPDF from 'jspdf'
-import { motion } from 'framer-motion'
-import { useState, useLayoutEffect } from 'react'
+import { useState, useLayoutEffect, useEffect } from 'react'
 import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { useDetectionStore } from '../store/detection-store'
 import type { PredictionItem } from '../types/api'
-import { Download, FileText, ArrowLeft, ShieldCheck, DollarSign, Activity } from 'lucide-react'
+import { Download, ArrowLeft, ShieldCheck, Activity } from 'lucide-react'
 
-function pdfImageFormat(src: string, file: File | null): 'JPEG' | 'PNG' | 'WEBP' {
-  if (src.startsWith('data:image/png')) return 'PNG'
-  if (src.startsWith('data:image/webp')) return 'WEBP'
-  if (file?.type === 'image/png') return 'PNG'
-  if (file?.type === 'image/webp') return 'WEBP'
-  return 'JPEG'
+type ReportDamageRow = {
+  image_index?: number
+  part?: string
+  damage_type?: string
+  confidence?: number
+  area?: number
+  damage_score?: number
+}
+
+
+
+function asNumber(value: unknown, fallback = 0): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function asText(value: unknown, fallback = 'N/A'): string {
+  if (typeof value === 'string' && value.trim().length > 0) return value
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return fallback
+}
+
+async function toPdfImageSource(src: string): Promise<{ dataUrl: string; width: number; height: number }> {
+  return await new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const w = img.naturalWidth || 1200
+        const h = img.naturalHeight || 800
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Canvas context unavailable'))
+          return
+        }
+        ctx.drawImage(img, 0, 0)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
+        resolve({ dataUrl, width: w, height: h })
+      } catch (err) {
+        reject(err)
+      }
+    }
+    img.onerror = () => reject(new Error('Failed to load image for PDF conversion'))
+    img.src = src
+  })
 }
 
 export function ResultPage() {
@@ -21,35 +62,56 @@ export function ResultPage() {
   const severity = useDetectionStore((state) => state.severity)
   const cost = useDetectionStore((state) => state.cost)
   const previewUrlFromStore = useDetectionStore((state) => state.previewUrl)
+  const isMultiScanStore = useDetectionStore((state) => state.isMultiScan)
+  const scans = useDetectionStore((state) => state.scans)
+  
+  // Ensure isMultiScan is true if scans are present (fallback for history loading)
+  const isMultiScan = isMultiScanStore || (scans && scans.length > 0)
+
+  useEffect(() => {
+    console.log('ResultPage State:', { isMultiScan, isMultiScanStore, scansCount: scans?.length })
+  }, [isMultiScan, isMultiScanStore, scans])
   const [displaySrc, setDisplaySrc] = useState<string | null>(null)
   const [imageSize, setImageSize] = useState({ width: 1, height: 1 })
   const [isGenerating, setIsGenerating] = useState(false)
+  const [activeScanIdx, setActiveScanIdx] = useState(0)
 
   useLayoutEffect(() => {
-    if (file) {
+    if (isMultiScan && scans.length > 0) {
+      setDisplaySrc(scans[activeScanIdx].previewUrl)
+    } else if (file) {
       const url = URL.createObjectURL(file)
       setDisplaySrc(url)
       return () => URL.revokeObjectURL(url)
+    } else {
+      setDisplaySrc(previewUrlFromStore)
     }
-    setDisplaySrc(previewUrlFromStore)
     return undefined
-  }, [file, previewUrlFromStore])
+  }, [file, previewUrlFromStore, isMultiScan, scans, activeScanIdx])
 
   if (!predict || !severity || !cost) {
     return <Navigate to="/upload" replace />
   }
 
-  const topDetections = [...predict.predictions]
+  // Filter predictions based on active image if multi-scan
+  const currentPredictions = isMultiScan 
+    ? predict.predictions.filter(p => p.image_index === activeScanIdx)
+    : predict.predictions
+
+  const topDetections = [...currentPredictions]
     .sort((a, b) => b.confidence - a.confidence)
     .slice(0, 5)
 
   const downloadPdfReport = async () => {
     try {
+      setIsGenerating(true)
       const doc = new jsPDF()
       const generatedAt = new Date().toLocaleString()
       const vi = (cost?.cost_estimation?.vehicle_info as any) || {}
       const brandColor = [152, 66, 22]
       const brandDark = [45, 26, 18]
+      const allPredictions = predict.predictions || []
+      const detailedDamageRows = (severity.severity_report.damage_table || []) as ReportDamageRow[]
 
       // Helper for headers
       const sectionHeader = (title: string, yPos: number) => {
@@ -108,27 +170,38 @@ export function ResultPage() {
         y += 7
       })
 
-      // --- 2. ANNOTATED DAMAGE IMAGE ---
-      y = sectionHeader('2. Annotated Damage Image', y + 5)
-      if (displaySrc) {
-        const imgWidth = 165
-        const actualWidth = imageSize.width > 1 ? imageSize.width : 1200
-        const actualHeight = imageSize.height > 1 ? imageSize.height : 800
-        const imgHeight = (actualHeight / actualWidth) * imgWidth
-        
-        if (y + imgHeight > 270) {
+      // --- 2 & 3. IMAGE-WISE DAMAGE REPORT ---
+      const renderImageSection = async (
+        sectionTitle: string,
+        imageSrc: string,
+        imageFile: File | null,
+        rows: ReportDamageRow[],
+        predictions: PredictionItem[],
+      ) => {
+        if (y > 200) {
           doc.addPage()
           y = 20
         }
-        
+
+        y = sectionHeader(sectionTitle, y + 2)
+        const imgWidth = 165
         try {
-          const fmt = pdfImageFormat(displaySrc, file)
-          doc.addImage(displaySrc, fmt, 14, y, imgWidth, imgHeight)
+          const processed = await toPdfImageSource(imageSrc)
+          const actualWidth = processed.width
+          const actualHeight = processed.height
+          const imgHeight = (actualHeight / actualWidth) * imgWidth
+
+          if (y + imgHeight > 260) {
+            doc.addPage()
+            y = 20
+          }
+
+          doc.addImage(processed.dataUrl, 'JPEG', 14, y, imgWidth, imgHeight)
           
           // Draw Bounding Boxes
           doc.setDrawColor(152, 66, 22)
           doc.setLineWidth(0.5)
-          predict.predictions.forEach(p => {
+          predictions.forEach(p => {
             const [x1, y1, x2, y2] = p.bbox
             const bx = 14 + (x1 / actualWidth) * imgWidth
             const by = y + (y1 / actualHeight) * imgHeight
@@ -136,49 +209,101 @@ export function ResultPage() {
             const bh = ((y2 - y1) / actualHeight) * imgHeight
             doc.rect(bx, by, bw, bh, 'D')
             
+            // Draw Label
             doc.setFillColor(152, 66, 22)
-            const labelText = `${p.class.toUpperCase()} ${Math.round(p.confidence * 100)}%`
+            const labelText = `${asText(p.class).toUpperCase()} ${Math.round(asNumber(p.confidence) * 100)}%`
             const labelW = doc.getTextWidth(labelText) + 4
             doc.rect(bx, by - 5, labelW, 5, 'F')
             doc.setTextColor(255, 255, 255)
             doc.setFontSize(6)
             doc.text(labelText, bx + 2, by - 1.5)
           })
-          y += imgHeight + 10
-        } catch (imgError) {
+          
+          y += imgHeight + 8
+        } catch (err: any) {
+          console.error('PDF Image Error Details:', err)
           doc.setTextColor(255, 0, 0)
-          doc.text('[Image could not be embedded in PDF]', 14, y + 5)
+          doc.setFontSize(8)
+          const errorMsg = err?.message || 'Unknown error'
+          doc.text(`[Image Error: ${errorMsg}]`, 14, y + 5)
           y += 10
         }
+
+        if (y > 250) {
+          doc.addPage()
+          y = 20
+        }
+
+        doc.setTextColor(255, 255, 255)
+        doc.setFillColor(brandDark[0], brandDark[1], brandDark[2])
+        doc.rect(14, y, 182, 6, 'F')
+        doc.setFontSize(8)
+        doc.text(' Part', 15, y + 4.5)
+        doc.text(' Damage Type', 52, y + 4.5)
+        doc.text(' Confidence', 95, y + 4.5)
+        doc.text(' Area Ratio', 130, y + 4.5)
+        doc.text(' Score', 165, y + 4.5)
+        y += 6
+        doc.setTextColor(brandDark[0], brandDark[1], brandDark[2])
+
+        if (rows.length === 0) {
+          doc.setFontSize(8)
+          doc.text(' No damage detected for this image.', 15, y + 5)
+          y += 9
+          return
+        }
+
+        rows.forEach((row, idx) => {
+          if (y > 280) {
+            doc.addPage()
+            y = 20
+            doc.setTextColor(255, 255, 255)
+            doc.setFillColor(brandDark[0], brandDark[1], brandDark[2])
+            doc.rect(14, y, 182, 6, 'F')
+            doc.setFontSize(8)
+            doc.text(' Part', 15, y + 4.5)
+            doc.text(' Damage Type', 52, y + 4.5)
+            doc.text(' Confidence', 95, y + 4.5)
+            doc.text(' Area Ratio', 130, y + 4.5)
+            doc.text(' Score', 165, y + 4.5)
+            y += 6
+            doc.setTextColor(brandDark[0], brandDark[1], brandDark[2])
+          }
+          if (idx % 2 === 0) doc.setFillColor(245, 245, 247)
+          else doc.setFillColor(255, 255, 255)
+          doc.rect(14, y, 182, 6, 'F')
+          doc.text(` ${asText(row.part)}`, 15, y + 4)
+          doc.text(` ${asText(row.damage_type)}`, 52, y + 4)
+          doc.text(` ${Math.round(asNumber(row.confidence) * 100)}%`, 95, y + 4)
+          doc.text(` ${asNumber(row.area).toFixed(3)}`, 130, y + 4)
+          doc.text(` ${asNumber(row.damage_score).toFixed(3)}`, 165, y + 4)
+          y += 6
+        })
+        y += 6
       }
 
-      // --- 3. DAMAGE DETECTIONS ---
-      if (y > 240) { doc.addPage(); y = 20 }
-      y = sectionHeader('3. Damage Detections', y)
-      doc.setTextColor(255, 255, 255)
-      doc.setFillColor(brandDark[0], brandDark[1], brandDark[2])
-      doc.rect(14, y, 182, 6, 'F')
-      doc.setFontSize(8)
-      doc.text(' Part', 15, y + 4.5)
-      doc.text(' Damage Type', 65, y + 4.5)
-      doc.text(' Confidence', 115, y + 4.5)
-      doc.text(' Area Ratio', 145, y + 4.5)
-      doc.text(' Score', 175, y + 4.5)
-      y += 6
-      doc.setTextColor(brandDark[0], brandDark[1], brandDark[2])
-      const damageTable = severity.severity_report.damage_table || []
-      damageTable.forEach((det, i) => {
-        if (i % 2 === 0) doc.setFillColor(245, 245, 247)
-        else doc.setFillColor(255, 255, 255)
-        doc.rect(14, y, 182, 6, 'F')
-        doc.text(` ${det.part}`, 15, y + 4)
-        doc.text(` ${det.damage_type}`, 65, y + 4)
-        doc.text(` ${Math.round(det.confidence * 100)}%`, 115, y + 4)
-        doc.text(` ${det.area.toFixed(3)}`, 145, y + 4)
-        doc.text(` ${det.damage_score.toFixed(3)}`, 175, y + 4)
-        y += 6
-      })
-      y += 5
+      if (isMultiScan && scans.length > 0) {
+        for (let idx = 0; idx < scans.length; idx += 1) {
+          const scan = scans[idx]
+          const scanRows = detailedDamageRows.filter((row) => row.image_index === idx)
+          const scanPredictions = allPredictions.filter((p) => p.image_index === idx)
+          await renderImageSection(
+            `2.${idx + 1} ${scan.label} Damage Report`,
+            scan.previewUrl,
+            scan.file ?? null,
+            scanRows,
+            scanPredictions,
+          )
+        }
+      } else if (displaySrc) {
+        await renderImageSection(
+          '2. Annotated Damage Image',
+          displaySrc,
+          file,
+          detailedDamageRows,
+          allPredictions,
+        )
+      }
 
       // --- 4. SEVERITY ANALYSIS ---
       if (y > 220) { doc.addPage(); y = 20 }
@@ -209,7 +334,15 @@ export function ResultPage() {
         if (i % 2 === 0) doc.setFillColor(245, 245, 247)
         else doc.setFillColor(255, 255, 255)
         doc.rect(14, y, 182, 6, 'F')
-        doc.text(` ${p}`, 15, y + 4); doc.text(` ${info.severity_level}`, 55, y + 4); doc.text(` ${info.severity_score.toFixed(1)}`, 80, y + 4); doc.text(` ${info.damage_types.join(', ')}`, 100, y + 4); doc.text(` ${info.is_structural ? 'Yes' : 'No'}`, 145, y + 4); doc.text(` ${info.is_safety_critical ? 'Yes' : 'No'}`, 170, y + 4); y += 6
+        const partInfo = info as any
+        const damageTypes = Array.isArray(partInfo.damage_types) ? partInfo.damage_types.join(', ') : 'N/A'
+        doc.text(` ${p}`, 15, y + 4)
+        doc.text(` ${asText(partInfo.severity_level)}`, 55, y + 4)
+        doc.text(` ${asNumber(partInfo.severity_score).toFixed(1)}`, 80, y + 4)
+        doc.text(` ${damageTypes}`, 100, y + 4)
+        doc.text(` ${partInfo.is_structural === true ? 'Yes' : partInfo.is_structural === false ? 'No' : '-'}`, 145, y + 4)
+        doc.text(` ${partInfo.is_safety_critical === true ? 'Yes' : partInfo.is_safety_critical === false ? 'No' : '-'}`, 170, y + 4)
+        y += 6
       })
 
       // --- 5. REPAIR COST ESTIMATE ---
@@ -259,6 +392,8 @@ export function ResultPage() {
     } catch (error) {
       console.error('PDF Generation Error:', error)
       alert('Failed to generate PDF. Please check console for details.')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -285,8 +420,12 @@ export function ResultPage() {
               <ArrowLeft size={18} /> New Analysis
             </button>
           </Link>
-          <button onClick={downloadPdfReport} className="button-primary flex items-center gap-2">
-            <Download size={18} /> Download PDF
+          <button
+            onClick={downloadPdfReport}
+            disabled={isGenerating}
+            className={`button-primary flex items-center gap-2 ${isGenerating ? 'opacity-60 cursor-not-allowed' : ''}`}
+          >
+            <Download size={18} /> {isGenerating ? 'Generating PDF...' : 'Download PDF'}
           </button>
         </div>
       </div>
@@ -295,18 +434,36 @@ export function ResultPage() {
         {/* Left Column: Visuals */}
         <div className="lg:col-span-2 space-y-8">
           {displaySrc ? (
-            <div className="glass-card p-4">
-              <DamageImageOverlay
-                previewUrl={displaySrc}
-                predictions={predict.predictions}
-                imageSize={imageSize}
-                onImageLoad={setImageSize}
-              />
+            <div className="space-y-4">
+              {isMultiScan && (
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                  {scans.map((scan, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveScanIdx(idx)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap ${
+                        activeScanIdx === idx 
+                          ? 'bg-[#984216] text-white shadow-md' 
+                          : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
+                      }`}
+                    >
+                      {scan.label.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="glass-card p-4">
+                <DamageImageOverlay
+                  previewUrl={displaySrc}
+                  predictions={currentPredictions}
+                  imageSize={imageSize}
+                  onImageLoad={setImageSize}
+                />
+              </div>
             </div>
           ) : (
             <div className="glass-card p-8 text-center text-slate-500 text-sm font-medium leading-relaxed">
-              No image URL is available for this session (for example, an old history entry may only have a
-              temporary browser link). Run a new analysis from Upload to see the vehicle image here.
+              No image URL is available for this session.
             </div>
           )}
 
@@ -468,10 +625,4 @@ function DetectionItem({ item }: { item: PredictionItem }) {
   )
 }
 
-function truncate(value: string, max: number) {
-  if (value.length <= max) {
-    return value
-  }
-  return `${value.slice(0, max - 1)}.`
-}
 

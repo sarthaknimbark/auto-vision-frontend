@@ -30,6 +30,8 @@ type ReportRow = {
     severity?: { severity_report?: { severity_level?: string } }
     cost?: { cost_estimation?: { currency?: string; grand_total?: number } }
     predict?: unknown
+    isMultiScan?: boolean
+    multiScans?: { label: string; imageUrl: string }[]
   }
   imageUrl?: string
   createdAt?: string
@@ -112,15 +114,22 @@ export function UsersPage() {
   }
 
   const handleViewReport = (item: ReportRow) => {
+    console.log('Admin Opening Report:', item)
     if (!item.results) return
     const img = historyImageSrc(item.imageUrl)
     useDetectionStore.setState({
+      isMultiScan: !!item.results.isMultiScan,
       file: null,
       previewUrl: img,
+      scans: (item.results.multiScans || []).map((s: any) => ({
+        file: null,
+        previewUrl: s.imageUrl,
+        label: s.label
+      })),
       upload: { message: 'Loaded from history', filename: 'assessment.jpg' },
-      predict: item.results.predict,
-      severity: item.results.severity,
-      cost: item.results.cost,
+      predict: item.results.predict as any,
+      severity: item.results.severity as any,
+      cost: item.results.cost as any,
     })
     navigate('/result')
   }

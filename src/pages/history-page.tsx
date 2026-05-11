@@ -31,8 +31,14 @@ export function HistoryPage() {
     if (!item?.results) return
     const img = historyImageSrc(item.imageUrl)
     useDetectionStore.setState({
+      isMultiScan: !!item.results.isMultiScan,
       file: null,
       previewUrl: img,
+      scans: (item.results.multiScans || []).map((s: any) => ({
+        file: null,
+        previewUrl: s.imageUrl,
+        label: s.label
+      })),
       upload: { message: 'Loaded from history', filename: 'assessment.jpg' },
       predict: item.results.predict,
       severity: item.results.severity,

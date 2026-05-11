@@ -18,9 +18,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
   })
 }
 
-/**
- * Downscale to JPEG data URL so MongoDB (16MB doc) and Express accept the payload.
- */
+
 export async function fileToCompressedJpegDataUrl(
   file: File,
   maxEdge = 1600,
