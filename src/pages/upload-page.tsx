@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { estimateCost, fullScan, getVehicleCatalog, predictDamage, predictSeverity, uploadFile } from '../api/detection'
+import { nodeApiUrl } from '../api/node-base-url'
 import { useDetectionStore } from '../store/detection-store'
 import { fileToCompressedJpegDataUrl } from '../utils/history-image'
 import { Upload, Car, Calendar, Loader2, AlertCircle } from 'lucide-react'
@@ -149,7 +150,7 @@ export function UploadPage() {
         }
         console.log('Saving to History:', payload)
         
-        await fetch('http://localhost:5000/api/data', {
+        await fetch(nodeApiUrl('/data'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

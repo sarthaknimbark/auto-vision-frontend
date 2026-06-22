@@ -1,10 +1,9 @@
 import axios from 'axios'
 import { getToken } from '../services/auth-storage'
-
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/api'
+import { PYTHON_API_BASE_URL } from './python-base-url'
 
 export const apiClient = axios.create({
-  baseURL,
+  baseURL: PYTHON_API_BASE_URL,
   timeout: 30000,
 })
 

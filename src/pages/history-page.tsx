@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth-context'
 import { ShieldCheck, Calendar, User as UserIcon, ArrowRight, Mail } from 'lucide-react'
 import { useDetectionStore } from '../store/detection-store'
+import { nodeApiUrl } from '../api/node-base-url'
 import { historyImageSrc } from '../utils/history-image'
 
 export function HistoryPage() {
@@ -13,7 +14,7 @@ export function HistoryPage() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/data', {
+        const res = await fetch(nodeApiUrl('/data'), {
           headers: { 'x-auth-token': token || '' }
         })
         const data = await res.json()

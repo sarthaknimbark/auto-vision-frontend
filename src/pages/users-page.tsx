@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth-context'
 import { useDetectionStore } from '../store/detection-store'
+import { nodeApiUrl } from '../api/node-base-url'
 import {
   Users,
   Mail,
@@ -49,7 +50,7 @@ export function UsersPage() {
   const navigate = useNavigate()
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/data/users', {
+      const res = await fetch(nodeApiUrl('/data/users'), {
         headers: { 'x-auth-token': token || '' }
       })
       const data = await res.json()
@@ -66,7 +67,7 @@ export function UsersPage() {
   const fetchAllReports = async () => {
     setReportsLoading(true)
     try {
-      const res = await fetch('http://localhost:5000/api/data', {
+      const res = await fetch(nodeApiUrl('/data'), {
         headers: { 'x-auth-token': token || '' }
       })
       const data = await res.json()
@@ -141,7 +142,7 @@ export function UsersPage() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/data/users/${id}`, {
+      const res = await fetch(nodeApiUrl(`/data/users/${id}`), {
         method: 'DELETE',
         headers: { 'x-auth-token': token || '' }
       })

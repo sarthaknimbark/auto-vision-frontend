@@ -3,6 +3,7 @@ import { useState, useLayoutEffect, useEffect } from 'react'
 import { useNavigate, Navigate, Link } from 'react-router-dom'
 import { useDetectionStore } from '../store/detection-store'
 import type { PredictionItem } from '../types/api'
+import { nodeApiUrl } from '../api/node-base-url'
 import { Download, ArrowLeft, ShieldCheck, Activity } from 'lucide-react'
 
 type ReportDamageRow = {
@@ -105,7 +106,7 @@ export function ResultPage() {
       const assessmentId = (state.predict as any)?._id || (state.severity as any)?._id
       if (assessmentId && /^[a-f\d]{24}$/i.test(assessmentId)) {
         const token = localStorage.getItem('token') || ''
-        setDisplaySrc(`http://localhost:5000/api/data/assessment/${assessmentId}/image?token=${encodeURIComponent(token)}`)
+        setDisplaySrc(nodeApiUrl(`/data/assessment/${assessmentId}/image?token=${encodeURIComponent(token)}`))
       } else {
         setDisplaySrc(null)
       }

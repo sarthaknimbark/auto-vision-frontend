@@ -43,6 +43,19 @@ export default defineConfig([
 ])
 ```
 
+## Deployment
+
+This repo is the frontend only. Deploy it to Vercel as a static Vite app, and point it at your backends with separate env vars.
+
+Set this in Vercel project settings under Environment Variables:
+
+- `VITE_NODE_API_BASE_URL` = your Node backend public URL, for example `https://node-api.your-domain.com`
+- `VITE_PYTHON_API_BASE_URL` = your Python backend public URL, for example `https://python-api.your-domain.com`
+
+If you prefer Vercel rewrites instead of public backend URLs, map `/api/node` to the Node backend and `/api/python` to the Python backend in `vercel.json`.
+
+The shared URL helpers live in `src/api/node-base-url.ts` and `src/api/python-base-url.ts`. Auth, history, users, and result calls use the Node backend; detection and upload calls use the Python backend.
+
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js

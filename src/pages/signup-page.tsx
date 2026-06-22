@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/auth-context'
+import { nodeApiUrl } from '../api/node-base-url'
 
 export function SignupPage() {
   const [name, setName] = useState('')
@@ -14,7 +15,7 @@ export function SignupPage() {
     e.preventDefault()
     setError('')
     try {
-      const res = await fetch('http://localhost:5000/api/auth/register', {
+      const res = await fetch(nodeApiUrl('/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role: 'user' })
