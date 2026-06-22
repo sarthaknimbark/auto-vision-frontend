@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { CostEstimationResponse, PredictResponse, SeverityResponse, UploadResponse } from '../types/api'
+import type { CostEstimationResponse, PredictResponse, SeverityResponse, UploadResponse } from '../types/api'import type { CostEstimationResponse, PredictResponse, SeverityResponse, UploadResponse } from '../types/api'
 
 interface ScanItem {
   file: File | null
