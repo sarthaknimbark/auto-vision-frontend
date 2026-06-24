@@ -5,6 +5,7 @@ import { ShieldCheck, Calendar, User as UserIcon, ArrowRight, Mail } from 'lucid
 import { useDetectionStore } from '../store/detection-store'
 import { nodeApiUrl } from '../api/node-base-url'
 import { historyImageSrc } from '../utils/history-image'
+import { CarLoader } from '../components/ui/loader'
 
 export function HistoryPage() {
   const [history, setHistory] = useState<any[]>([])
@@ -69,8 +70,8 @@ export function HistoryPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20">
-          <p className="text-slate-400 font-medium">Loading history...</p>
+        <div className="flex justify-center items-center py-20">
+          <CarLoader isOverlay={false} message="Loading History" description="Fetching your past vehicle assessments..." />
         </div>
       ) : history.length === 0 ? (
         <div className="glass-card p-20 text-center">

@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { historyImageSrc } from '../utils/history-image'
+import { CarLoader } from '../components/ui/loader'
 
 type ReportRow = {
   _id: string
@@ -254,8 +255,8 @@ export function UsersPage() {
         <div role="tabpanel" aria-labelledby="admin-tab-users">
           <p className="text-slate-500 text-sm font-medium mb-6">Manage registered users and roles</p>
           {loading ? (
-            <div className="text-center py-20 glass-card">
-              <p className="text-slate-400 font-medium">Loading users...</p>
+            <div className="flex justify-center items-center py-20 glass-card">
+              <CarLoader isOverlay={false} message="Loading Users" description="Fetching registered accounts..." />
             </div>
           ) : (
             <div className="glass-card overflow-hidden">
@@ -327,8 +328,8 @@ export function UsersPage() {
           </p>
 
           {reportsLoading ? (
-            <div className="text-center py-16 glass-card">
-              <p className="text-slate-400 font-medium">Loading reports…</p>
+            <div className="flex justify-center items-center py-16 glass-card">
+              <CarLoader isOverlay={false} message="Loading Reports" description="Fetching vehicle assessments..." />
             </div>
           ) : reports.length === 0 ? (
             <div className="glass-card p-12 text-center text-slate-500 font-medium">
@@ -452,8 +453,8 @@ export function UsersPage() {
           <p className="text-slate-500 text-sm font-medium mb-8">Platform-wide insights and performance metrics</p>
           
           {reportsLoading ? (
-            <div className="text-center py-16 glass-card">
-              <p className="text-slate-400 font-medium">Calculating insights...</p>
+            <div className="flex justify-center items-center py-16 glass-card">
+              <CarLoader isOverlay={false} message="Loading Analytics" description="Calculating insights and performance metrics..." />
             </div>
           ) : reports.length === 0 ? (
             <div className="glass-card p-12 text-center text-slate-500 font-medium">

@@ -2,18 +2,21 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/auth-context'
 import { nodeApiUrl } from '../api/node-base-url'
+import { CarLoader } from '../components/ui/loader'
 
 export function SignupPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setIsLoading(true)
     try {
       const res = await fetch(nodeApiUrl('/auth/register'), {
         method: 'POST',
@@ -26,6 +29,8 @@ export function SignupPage() {
       navigate('/')
     } catch (err: any) {
       setError(err.message)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -50,6 +55,7 @@ export function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -61,6 +67,7 @@ export function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -72,11 +79,12 @@ export function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
           </div>
           
-          <button type="submit" className="button-primary w-full h-12 mt-4 font-black text-lg shadow-xl">
-            Create Account
+          <button type="submit" className="button-primary w-full h-12 mt-4 font-black text-lg shadow-xl" disabled={isLoading}>
+            {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
@@ -87,6 +95,13 @@ export function SignupPage() {
           </Link>
         </p>
       </div>
+
+      {isLoading && (
+        <CarLoader 
+          message="Creating Account" 
+          description="Registering your AutoVision credentials and setting up your workspace..." 
+        />
+      )}
     </div>
   )
 }

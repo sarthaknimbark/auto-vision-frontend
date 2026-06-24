@@ -5,6 +5,7 @@ import { useDetectionStore } from '../store/detection-store'
 import type { PredictionItem } from '../types/api'
 import { nodeApiUrl } from '../api/node-base-url'
 import { Download, ArrowLeft, ShieldCheck, Activity } from 'lucide-react'
+import { CarLoader } from '../components/ui/loader'
 
 type ReportDamageRow = {
   image_index?: number
@@ -570,6 +571,9 @@ export function ResultPage() {
           </div>
         </div>
       </div>
+      {isGenerating && (
+        <CarLoader message="Generating Report" description="Preparing and compiling your detailed PDF report..." />
+      )}
     </div>
   </div>
   )
